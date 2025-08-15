@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> {{ $setting->meta_title }}</title>
+      <!-- SEO Meta Tags -->
+      <meta name="description" content="{{ $setting->meta_description }}">
+      <meta name="keywords" content="{{ $setting->meta_keywords }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.0/css/all.min.css"
+        integrity="sha512-10/jx2EXwxxWqCLX/hHth/vu2KY3jCF70dCQB8TSgNjbCVAC/8vai53GfMDrO2Emgwccf2pJqxct9ehpzG+MTw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    @if ($setting->header)
+        {!! $setting->header !!}
+    @endif
+    <style>
+        /* Slots grid and pagination */
+        .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .5rem; }
+        .time-slot { white-space: nowrap; }
+        .slots-pagination { display: flex; align-items: center; justify-content: space-between; margin-top: .5rem; }
+
+        /* Live summary (mobile bottom, desktop inline) */
+        .live-summary { font-size: .9rem; }
+        .live-summary .badge { font-weight: 500; }
+        @media (max-width: 576px) {
+            .live-summary { width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header-section shadow-sm sticky-top bg-white">
+        <nav class="navbar navbar-expand-lg navbar-light py-2">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center" href="/">
+                    @if ($setting->logo)
+                        <img src="{{ asset("uploads/images/logo/{$setting->logo}") }}" alt="{{ $setting->bname }}" height="36" width="auto" loading="lazy">
+                    @else
+                        <i class="bi bi-calendar-check fs-3 text-primary"></i>
+                    @endif
+                    <span class="fw-bold ms-2 d-none d-sm-inline">{{ $setting->bname ?? 'Appointment System' }}</span>
+                </a>
+                
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto align-items-center">
+                        <li class="nav-item">
+                            <a class="nav-link px-3 {{ request()->is('/') ? 'active fw-medium' : '' }}" href="/">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link px-3" href="#services">Services</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link px-3" href="#faq">FAQ</a>
+                        </li>
+                        
+                        @guest
+                            <li class="nav-item ms-lg-2">
+                                <a class="nav-link px-3" href="{{ route('login') }}">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                                </a>
+                            </li>
+                        @endguest
+
+                        @auth
+                            <li class="nav-item dropdown ms-lg-2">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" 
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    <div class="me-2 rounded-circle bg-light d-flex align-items-center justify-content-center" 
+                                         style="width: 32px; height: 32px; overflow: hidden;">
+                                        @if(Auth::user()->image)
+                                            <img src="{{ Auth::user()->profileImage() }}" 
+                                                 alt="Profile" class="img-fluid rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
+                                        @else
+                                            <i class="bi bi-person"></i>
+                                        @endif
+                                    </div>
+                                    <span>{{ Auth::user()->name }}</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2">
+                                    <li><a class="dropdown-item py-2" href="{{ route('dashboard') }}">
+                                        <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                                    </a></li>
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li>
+                                        <form method="POST" action="{{ route('logout') }}" id="logout-form">
+                                            @csrf
+                                            <a class="dropdown-item py-2 text-danger" href="{{ route('logout') }}"
+                                               onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                                <i class="bi bi-box-arrow-right me-2"></i> Logout
+                                            </a>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        @endauth
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="booking-container">
+            <div class="booking-header">
+                @if ($setting->logo)
+                    <img src="{{ asset("uploads/images/logo/{$setting->logo}") }}" alt="{{ $setting->bname }}" height="50" class="mb-3" loading="lazy">
+                @else
+                    <i class="bi bi-calendar-check fs-1 mb-3"></i>
+                @endif
+                <h2 class="mb-3">{{ $setting->bname ?? 'Appointment System' }}</h2>
+                <p class="mb-0">Book your appointment in a few simple steps</p>
+            </div>
+
+            <div class="booking-steps position-relative">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Category</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Service</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Staff</div>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-title">Date & Time</div>
+                </div>
+                <div class="step" data-step="5">
+                    <div class="step-number">5</div>
+                    <div class="step-title">Confirm</div>
+                </div>
+                <div class="progress-bar-steps">
+                    <div class="progress"></div>
+                </div>
+            </div>
+
+            <div class="booking-content">
+                <!-- Live Summary (desktop inline, mobile above footer) -->
+                <div class="alert alert-light border live-summary mb-3" id="live-summary" role="status" aria-live="polite">
+                    <span class="me-2"><i class="bi bi-clipboard-check text-primary"></i></span>
+                    <span>Service: <span class="badge text-bg-secondary" id="sumService">—</span></span>
+                    <span class="ms-2">Staff: <span class="badge text-bg-secondary" id="sumStaff">—</span></span>
+                    <span class="ms-2">Date: <span class="badge text-bg-secondary" id="sumDate">—</span></span>
+                    <span class="ms-2">Time: <span class="badge text-bg-secondary" id="sumTime">—</span></span>
+                </div>
+                <!-- Step 1: Category Selection -->
+                <div class="booking-step active" id="step1">
+                    <h3 class="mb-4">Select a Category</h3>
+                    <div class="row row-cols-1 row-cols-md-3 g-4" id="categories-container">
+                        <!-- Categories will be inserted here by jQuery -->
+                    </div>
+                </div>
+
+                <!-- Step 2: Service Selection -->
+                <div class="booking-step" id="step2">
+                    <h3 class="mb-4">Select a Service</h3>
+                    <div class="selected-category-name mb-3 fw-bold"></div>
+                    <div class="row row-cols-1 row-cols-md-3 g-4" id="services-container">
+                        <!-- Services will be loaded dynamically based on category -->
+                    </div>
+                </div>
+
+                <!-- Step 3: Employee Selection -->
+                <div class="booking-step" id="step3">
+                    <h3 class="mb-4">Select a Staff Member</h3>
+                    <div class="selected-service-name mb-3 fw-bold"></div>
+                    <div class="row row-cols-1 row-cols-md-3 g-4" id="employees-container">
+                        <!-- Employees will be loaded dynamically based on service -->
+                    </div>
+                </div>
+
+                <!-- Step 4: Date and Time Selection -->
+                <div class="booking-step" id="step4">
+                    <h3 class="mb-4">Select Date & Time</h3>
+                    <div class="selected-employee-name mb-3 fw-bold"></div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <button class="btn btn-sm btn-outline-secondary" id="prev-month"><i
+                                            class="bi bi-chevron-left"></i></button>
+                                    <h5 class="mb-0" id="current-month">March 2023</h5>
+                                    <button class="btn btn-sm btn-outline-secondary" id="next-month"><i
+                                            class="bi bi-chevron-right"></i></button>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-calendar">
+                                        <thead>
+                                            <tr>
+                                                <th>Sun</th>
+                                                <th>Mon</th>
+                                                <th>Tue</th>
+                                                <th>Wed</th>
+                                                <th>Thu</th>
+                                                <th>Fri</th>
+                                                <th>Sat</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="calendar-body">
+                                            <!-- Calendar will be generated dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Available Time Slots</h5>
+                                    <div id="selected-date-display" class="text-muted small"></div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="time-slots-container" class="d-flex flex-column">
+                                        <!-- Time slots will be loaded dynamically -->
+                                        <div class="text-center text-muted w-100 py-4">
+                                            Please select a date to view available times
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Confirmation -->
+                <div class="booking-step" id="step5">
+                    <h3 class="mb-4">Confirm Your Booking</h3>
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Booking Summary</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="summary-item">
+                                <div class="row">
+                                    <div class="col-md-4 text-muted">Category:</div>
+                                    <div class="col-md-8" id="summary-category"></div>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="row">
+                                    <div class="col-md-4 text-muted">Service:</div>
+                                    <div class="col-md-8" id="summary-service"></div>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="row">
+                                    <div class="col-md-4 text-muted">Staff Member:</div>
+                                    <div class="col-md-8" id="summary-employee"></div>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="row">
+                                    <div class="col-md-4 text-muted">Date & Time:</div>
+                                    <div class="col-md-8" id="summary-datetime"></div>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="row">
+                                    <div class="col-md-4 text-muted">Duration:</div>
+                                    <div class="col-md-8" id="summary-duration"></div>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="row">
+                                    
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <h5>Your Information</h5>
+                                <form id="customer-info-form" autocomplete="on" novalidate>
+                                    @csrf
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="customer-name" class="form-label">Full Name</label>
+                                            <input type="text" class="form-control" id="customer-name" placeholder="Your full name" required maxlength="120" autocomplete="name">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="customer-email" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="customer-email" inputmode="email" placeholder="Your PanpacificU email address" required maxlength="120" autocomplete="email">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="customer-student-id" class="form-label">Student ID</label>
+                                            <input type="text" class="form-control" id="customer-student-id" placeholder="Your Student ID" required maxlength="50" autocomplete="off">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="customer-phone" class="form-label">Phone</label>
+                                            <input type="tel" class="form-control" id="customer-phone" placeholder="Your Phone number" required maxlength="20" autocomplete="tel" pattern="^[0-9+\-()\s]{6,20}$">
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="customer-notes" class="form-label">Notes (Optional)</label>
+                                            <textarea class="form-control" id="customer-notes" rows="3" placeholder="Additional notes (optional)"></textarea>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="booking-footer">
+                <button class="btn btn-outline-secondary" id="prev-step" disabled>
+                    <i class="bi bi-arrow-left"></i> Previous
+                </button>
+                <button class="btn btn-primary" id="next-step">
+                    Next <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="py-2 bg-light mt-3 border-top">
+        <div class="container">
+            <div class="row g-2">
+                <!-- Company/App Info -->
+                <div class="col-md-6">
+                    <h6>{{ $setting->bname ?? 'Appointment System' }}</h6>
+                    <p class="text-muted small mb-2">Easy online appointment scheduling for your convenience.</p>
+                    <div class="d-flex gap-2 mb-2">
+                        <a href="#" class="text-decoration-none"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="text-decoration-none"><i class="bi bi-instagram"></i></a>
+                        <a href="#" class="text-decoration-none"><i class="bi bi-github"></i></a>
+                    </div>
+                </div>
+                
+                <!-- Contact Information -->
+                <div class="col-md-6">
+                    <h6>Contact Us</h6>
+                    <p class="small mb-2">If any concerns send us an email at <a href="mailto:admin@darwinrg.me" class="text-decoration-none">admin@darwinrg.me</a></p>
+                </div>
+            </div>
+            
+            <!-- Copyright -->
+            <div class="row">
+                <div class="col-12">
+                    <hr class="my-1">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <p class="text-muted small mb-0">&copy; {{ date('Y') }} {{ $setting->bname ?? 'Appointment System' }}. All rights reserved.</p>
+                        <p class="text-muted small mb-0">Designed by <a target="_blank" href="https://darwinrg.me" class="text-decoration-none">DarwinRG</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Booking Confirmed!</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3">Thank You!</h4>
+                    <p>Your appointment has been successfully booked.</p>
+                    <div class="alert alert-info mt-3">
+                        <p class="mb-0">A confirmation email has been sent to your email address.</p>
+                    </div>
+                    <div class="alert alert-warning mt-3">
+                        <strong>Reminder:</strong> Please save a screenshot of this confirmation for your records before closing.
+                    </div>
+                    <div class="booking-details mt-4 text-start">
+                        <h5>Booking Details:</h5>
+                        <div id="modal-booking-details"></div>
+                        <div id="bookingActionButtons" class="mt-3 d-flex flex-wrap gap-2">
+                            <a id="addToGoogleCalendar" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-google"></i> Add to Google Calendar
+                            </a>
+                            <button id="downloadBookingImage" type="button" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Utilities for calendar links
+            function pad2(n) { return n.toString().padStart(2, '0'); }
+            function addMinutesToHHmm(hhmm, minutes) {
+                if (!hhmm) return null;
+                const [h, m] = hhmm.split(':').map(Number);
+                const d = new Date(2000, 0, 1, h, m, 0);
+                d.setMinutes(d.getMinutes() + (Number(minutes) || 0));
+                return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+            }
+            function parse12hToHHmm(text) {
+                if (!text) return null;
+                const m = text.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+                if (!m) return null;
+                let hour = parseInt(m[1], 10);
+                const minute = parseInt(m[2], 10);
+                const ampm = m[3].toUpperCase();
+                if (ampm === 'PM' && hour !== 12) hour += 12;
+                if (ampm === 'AM' && hour === 12) hour = 0;
+                return `${pad2(hour)}:${pad2(minute)}`;
+            }
+            function buildCalDateLocal(dateStr, hhmm) {
+                if (!dateStr || !hhmm) return null;
+                const [y, m, d] = dateStr.split('-').map(Number);
+                const [hh, mm] = hhmm.split(':').map(Number);
+                return `${y}${pad2(m)}${pad2(d)}T${pad2(hh)}${pad2(mm)}00`;
+            }
+            // Safely convert plain URLs into clickable links
+            function escapeHtml(text) {
+                return String(text)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+            }
+
+            function autolink(text) {
+                const escaped = escapeHtml(text || '');
+                const urlRegex = /(https?:\/\/[^\s<]+)/g;
+                return escaped.replace(urlRegex, (url) => {
+                    const safeUrl = url.replace(/"/g, '&quot;');
+                    return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer nofollow">${url}</a>`;
+                });
+            }
+
+            const categories = @json($categories);
+
+            const container = $('#categories-container'); // Target the container by ID
+
+            let html = '';
+            $.each(categories, function(index, category) {
+                html += `
+            <div class="col">
+                <div class="card border h-100 category-card text-center rounded p-2" data-category="${category.id}">
+                    <div class="card-body">
+                          <img class="img-fluid w-25 mb-2" src="${category.image ? 'uploads/images/category/' + category.image : 'uploads/images/category-default.png'}" 
+                               loading="lazy" onerror="this.src='uploads/images/category-default.png';">
+                        <h5 class="card-title">${category.title}</h5>
+                        <p class="card-text">${category.body}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+            });
+
+            container.html(html); // Insert all generated HTML at once
+
+
+            const employees = @json($employees);
+            // console.log(employees);
+
+            // Booking state
+            let bookingState = {
+                currentStep: 1,
+                selectedCategory: null,
+                selectedService: null,
+                selectedEmployee: null,
+                selectedDate: null,
+                selectedTime: null
+            };
+
+            // Initialize the booking system
+            updateProgressBar();
+            generateCalendar();
+
+            // Step navigation
+            $("#next-step").click(function() {
+                const currentStep = bookingState.currentStep;
+
+                // Validate current step before proceeding
+                if (!validateStep(currentStep)) {
+                    return;
+                }
+
+                if (currentStep < 5) {
+                    goToStep(currentStep + 1);
+                } else {
+                    // Submit booking
+                    if ($("#customer-info-form")[0].checkValidity()) {
+                        submitBooking();
+                    } else {
+                        $("#customer-info-form")[0].reportValidity();
+                    }
+                }
+            });
+
+            $("#prev-step").click(function() {
+                if (bookingState.currentStep > 1) {
+                    goToStep(bookingState.currentStep - 1);
+                }
+            });
+
+            // Category selection
+            $(document).on("click", ".category-card", function() {
+                $(".category-card").removeClass("selected");
+                $(this).addClass("selected");
+
+                const categoryId = $(this).data("category");
+                // console.log(categoryId);
+                bookingState.selectedCategory = categoryId;
+
+                // Reset subsequent selections
+                bookingState.selectedService = null;
+                bookingState.selectedEmployee = null;
+                bookingState.selectedDate = null;
+                bookingState.selectedTime = null;
+
+                // Update the service step with services for this category
+                updateServicesStep(categoryId);
+            });
+
+            // Service selection
+            $(document).on("click", ".service-card", function() {
+                $(".service-card").removeClass("selected");
+                $(this).addClass("selected");
+
+                const serviceId = $(this).data("service");
+                const serviceTitle = $(this).find('.card-title').text();
+                // const servicePrice = $(this).find('.fw-bold').text().replace('$', '');
+                const servicePrice = $(this).find('.fw-bold').text();
+                const serviceDuration = $(this).find('.card-text:contains("Duration:")').text().replace(
+                    'Duration: ', '');
+
+                // Store the selected service in booking state
+                bookingState.selectedService = {
+                    id: serviceId,
+                    title: serviceTitle,
+                    price: servicePrice,
+                    duration: serviceDuration
+                };
+
+                // Reset subsequent selections
+                bookingState.selectedEmployee = null;
+                bookingState.selectedDate = null;
+                bookingState.selectedTime = null;
+
+                // Clear previous selections UI
+                $(".employee-card").removeClass("selected");
+                $("#selected-date").text("");
+                $("#selected-time").text("");
+                $("#employees-container").empty(); // Clear previous employees while loading new ones
+
+                // Show loading state for employees
+                $("#employees-container").html(
+                    '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+                );
+
+                // Update the employee step with employees for this service
+                updateEmployeesStep(serviceId);
+
+                // Show the employee step immediately (loading will happen inside updateEmployeesStep)
+                $("#services-step").addClass("d-none");
+                $("#employees-step").removeClass("d-none");
+                $(".step-indicator[data-step='services']").removeClass("active current").addClass(
+                    "completed");
+                $(".step-indicator[data-step='employees']").addClass("active current");
+            });
+
+            // Employee selection
+            $(document).on("click", ".employee-card", function() {
+                $(".employee-card").removeClass("selected");
+                $(this).addClass("selected");
+
+                const employeeId = $(this).data("employee");
+                // alert(employeeId);
+                const employee = employees.find(e => e.id === employeeId);
+
+                bookingState.selectedEmployee = employee;
+
+                // Update summary badges for service/staff immediately
+                $('#sumService').text(bookingState.selectedService ? bookingState.selectedService.title : '—');
+                $('#sumStaff').text(employee?.user?.name || '—');
+
+                // Reset subsequent selections
+                bookingState.selectedDate = null;
+                bookingState.selectedTime = null;
+
+                // Update the calendar
+                updateCalendar();
+            });
+
+
+            // Date selection
+            $(document).on("click", ".calendar-day:not(.disabled)", function() {
+                $(".calendar-day").removeClass("selected");
+                $(this).addClass("selected");
+
+                const date = $(this).data("date");
+                bookingState.selectedDate = date;
+
+                // Reset time selection
+                bookingState.selectedTime = null;
+
+                // Update time slots based on employee availability
+                updateTimeSlots(date);
+            });
+
+            // Time slot selection (delegated, ensure object shape)
+            $(document).on("click", ".time-slot:not(.disabled)", function() {
+                $(".time-slot").removeClass("selected active");
+                $(this).addClass("selected active");
+                bookingState.selectedTime = {
+                    start: $(this).data('start') || null,
+                    end: $(this).data('end') || null,
+                    display: $(this).data('time') || $(this).text().trim()
+                };
+                updateSummary();
+            });
+
+            // Calendar navigation
+            $("#prev-month").click(function() {
+                navigateMonth(-1);
+            });
+
+            $("#next-month").click(function() {
+                navigateMonth(1);
+            });
+
+            // Functions
+            function goToStep(step) {
+                // Hide all steps
+                $(".booking-step").removeClass("active");
+
+                // Show the target step
+                $(`#step${step}`).addClass("active");
+
+                // Update the step indicators
+                $(".step").removeClass("active completed");
+
+                for (let i = 1; i <= 5; i++) {
+                    if (i < step) {
+                        $(`.step[data-step="${i}"]`).addClass("completed");
+                    } else if (i === step) {
+                        $(`.step[data-step="${i}"]`).addClass("active");
+                    }
+                }
+
+                // Update the current step
+                bookingState.currentStep = step;
+
+                // Update the navigation buttons
+                updateNavigationButtons();
+
+                // Update the progress bar
+                updateProgressBar();
+
+                // If we're on the confirmation step, update the summary
+                if (step === 5) {
+                    updateSummary();
+                }
+
+                // Scroll to top of booking container
+                $(".booking-container")[0].scrollIntoView({
+                    behavior: "smooth"
+                });
+
+                // If returning to time selection step, refresh availability for the selected date
+                if (step === 4 && bookingState.selectedEmployee && bookingState.selectedDate) {
+                    updateTimeSlots(bookingState.selectedDate);
+                }
+            }
+
+
+            function updateProgressBar() {
+                const progress = ((bookingState.currentStep - 1) / 4) * 100;
+                $(".progress-bar-steps .progress").css("width", `${progress}%`);
+            }
+
+
+            function updateNavigationButtons() {
+                // Enable/disable previous button
+                if (bookingState.currentStep === 1) {
+                    $("#prev-step").prop("disabled", true);
+                } else {
+                    $("#prev-step").prop("disabled", false);
+                }
+
+                // Update next button text
+                if (bookingState.currentStep === 5) {
+                    $("#next-step").html('Confirm Booking <i class="bi bi-check-circle"></i>');
+                } else {
+                    $("#next-step").html('Next <i class="bi bi-arrow-right"></i>');
+                }
+
+                // Keep live summary updated whenever navigation changes
+                updateSummary();
+            }
+
+
+            function validateStep(step) {
+                switch (step) {
+                    case 1:
+                        if (!bookingState.selectedCategory) {
+                            alert("Please select a category");
+                            return false;
+                        }
+                        return true;
+                    case 2:
+                        if (!bookingState.selectedService) {
+                            alert("Please select a service");
+                            return false;
+                        }
+                        return true;
+                    case 3:
+                        if (!bookingState.selectedEmployee) {
+                            alert("Please select a staff member");
+                            return false;
+                        }
+                        return true;
+                    case 4:
+                        if (!bookingState.selectedDate) {
+                            alert("Please select a date");
+                            return false;
+                        }
+                        if (!bookingState.selectedTime) {
+                            alert("Please select a time slot");
+                            return false;
+                        }
+                        return true;
+                    default:
+                        return true;
+                }
+            }
+
+
+            function updateServicesStep(categoryId) {
+                // Show loading state if needed
+                $("#services-container").html(
+                    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+                );
+
+                // Make AJAX request to get services for this category
+                $.ajax({
+                    url: `/categories/${categoryId}/services`,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success && response.services) {
+                            const services = response.services;
+
+                            // Update category name display
+                            $(".selected-category-name").text(
+                                `Selected Category: ${services[0]?.category?.title || ''}`);
+
+                            // Clear services container
+                            $("#services-container").empty();
+
+                            // Add services with animation delay
+                            services.forEach((service, index) => {
+                                
+
+                                const serviceCard = `
+                                    <div class="col animate-slide-in" style="animation-delay: ${index * 100}ms">
+                                        <div class="card border h-100 service-card text-center p-2" data-service="${service.id}">
+                                            <div class="card-body">
+                                                <img class="img-fluid w-25 rounded mb-2" src="${service.image ? 'uploads/images/service/' + service.image : 'uploads/images/service-default.png'}" 
+                                                     loading="lazy" onerror="this.src='uploads/images/service-default.png';">
+                                                <h5 class="card-title mb-1">${service.title}</h5>
+                                                <p class="card-text mb-1">${autolink(service.excerpt || '')}</p>
+                
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+
+                                $("#services-container").append(serviceCard);
+                            });
+                        } else {
+                            $("#services-container").html(
+                                '<div class="col-12 text-center py-5"><p>No services available for this category.</p></div>'
+                            );
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error(xhr);
+                        $("#services-container").html(
+                            '<div class="col-12 text-center py-5"><p>Error loading services. Please try again.</p></div>'
+                        );
+                    }
+                });
+            }
+
+
+
+            function updateEmployeesStep(serviceId) {
+                // Show loading state
+                $("#employees-container").html(
+                    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>'
+                );
+
+                // Make AJAX request to get employees for this service
+                $.ajax({
+                    url: `/services/${serviceId}/employees`,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success && response.employees) {
+                            const employees = response.employees;
+                            const service = response.service;
+
+                            
+
+                            // Update service name display
+                            $(".selected-service-name").html(
+                                `Selected Service: ${service.title}`
+                                );
+
+                            // Clear employees container
+                            $("#employees-container").empty();
+
+                            // Add employees with animation delay
+                            employees.forEach((employee, index) => {
+                                const employeeCard = `
+                                <div class="col animate-slide-in" style="animation-delay: ${index * 100}ms">
+                                    <div class="card border h-100 employee-card text-center p-2" data-employee="${employee.id}">
+                                        <div class="card-body">
+                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px; overflow: hidden;">
+                                                <img src="${employee.user.image_url}" class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;" 
+                                                     loading="lazy" onerror="this.src='uploads/images/staff-default.png';">
+                                            </div>
+                                            <h5 class="card-title">${employee.user.name}</h5>
+                                            <p class="card-text text-muted">${employee.position || 'Staff'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                                $("#employees-container").append(employeeCard);
+                            });
+                        } else {
+                            $("#employees-container").html(
+                                '<div class="col-12 text-center py-5"><p>No employees available for this service.</p></div>'
+                            );
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error(xhr);
+                        $("#employees-container").html(
+                            '<div class="col-12 text-center py-5"><p>Error loading employees. Please try again.</p></div>'
+                        );
+                    }
+                });
+            }
+
+            function generateCalendar() {
+                const today = new Date();
+                const currentMonth = today.getMonth();
+                const currentYear = today.getFullYear();
+
+                renderCalendar(currentMonth, currentYear);
+            }
+
+            function renderCalendar(month, year) {
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startingDay = firstDay.getDay(); // 0 = Sunday
+
+                // Update month display
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August",
+                    "September", "October", "November", "December"
+                ];
+                $("#current-month").text(`${monthNames[month]} ${year}`);
+
+                // Clear calendar
+                $("#calendar-body").empty();
+
+                // Build calendar
+                let date = 1;
+                for (let i = 0; i < 6; i++) {
+                    // Create a table row
+                    const row = $("<tr></tr>");
+
+                    // Create cells for each day of the week
+                    for (let j = 0; j < 7; j++) {
+                        if (i === 0 && j < startingDay) {
+                            // Empty cells before the first day of the month
+                            row.append("<td></td>");
+                        } else if (date > daysInMonth) {
+                            // Break if we've reached the end of the month
+                            break;
+                        } else {
+                            // Create a cell for this date
+                            const today = new Date();
+                            const cellDate = new Date(year, month, date);
+                            const formattedDate =
+                                `${year}-${(month + 1).toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
+
+                            // Check if this date is in the past
+                            const isPast = cellDate < new Date(today.setHours(0, 0, 0, 0));
+
+                            // Create the cell with appropriate classes
+                            const cell = $(
+                                `<td class="text-center calendar-day${isPast ? ' disabled' : ''}" data-date="${formattedDate}">${date}</td>`
+                            );
+
+                            row.append(cell);
+                            date++;
+                        }
+                    }
+
+                    // Add the row to the calendar if it has cells
+                    if (row.children().length > 0) {
+                        $("#calendar-body").append(row);
+                    }
+                }
+            }
+
+            function navigateMonth(direction) {
+                const currentMonthText = $("#current-month").text();
+                const [monthName, year] = currentMonthText.split(" ");
+
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August",
+                    "September", "October", "November", "December"
+                ];
+                let month = monthNames.indexOf(monthName);
+                let yearNum = parseInt(year);
+
+                month += direction;
+
+                if (month < 0) {
+                    month = 11;
+                    yearNum--;
+                } else if (month > 11) {
+                    month = 0;
+                    yearNum++;
+                }
+
+                renderCalendar(month, yearNum);
+            }
+
+
+            function updateCalendar() {
+                // Update employee name display
+                const employee = bookingState.selectedEmployee;
+                $(".selected-employee-name").text(`Selected Staff: ${employee.user.name}`);
+
+                // Clear previous selections
+                bookingState.selectedDate = null;
+                bookingState.selectedTime = null;
+                $(".calendar-day").removeClass("selected");
+                $(".time-slot").removeClass("selected");
+
+                // Show loading state for time slots
+                $("#time-slots-container").html(`
+                <div class="text-center w-100 py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `);
+            }
+
+            function updateCalendar() {
+                // Update employee name display
+                const employee = bookingState.selectedEmployee;
+                $(".selected-employee-name").text(`Selected Staff: ${employee.user.name}`);
+
+                // Clear previous selections
+                bookingState.selectedDate = null;
+                bookingState.selectedTime = null;
+                $(".calendar-day").removeClass("selected");
+                $(".time-slot").removeClass("selected");
+
+                // Show initial state instead of loading spinner
+                $("#time-slots-container").html(`
+                    <div class="text-center w-100 py-4">
+                        <div class="alert alert-info">
+                            <i class="bi bi-calendar-event me-2"></i>
+                            Please select a date to view available time slots
+                        </div>
+                    </div>
+                `);
+            }
+
+            function updateTimeSlots(selectedDate) {
+                if (!selectedDate) {
+                    $("#time-slots-container").html(`
+                    <div class="text-center w-100 py-4">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            No date selected
+                        </div>
+                    </div>
+                `);
+                    return;
+                }
+
+                const employeeId = bookingState.selectedEmployee.id;
+                const apiDate = new Date(selectedDate).toISOString().split('T')[0];
+
+                // Show loading state only when actually fetching
+                $("#time-slots-container").html(`
+                    <div class="text-center w-100 py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="mt-2">Checking availability...</div>
+                    </div>
+                `);
+
+                const cacheBuster = Date.now();
+                $.ajax({
+                    url: `/employees/${employeeId}/availability/${apiDate}?_=${cacheBuster}`,
+                    cache: false,
+                    success: function(response) {
+                        $("#time-slots-container").empty();
+
+                        if (response.available_slots.length === 0) {
+                            $("#time-slots-container").html(`
+                    <div class="text-center py-4">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-clock-history me-2"></i>
+                            No available slots for this date
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="updateCalendar()">
+                            <i class="bi bi-arrow-left me-1"></i> Back to calendar
+                        </button>
+                    </div>
+                `);
+                            return;
+                        }
+
+                        // Add slot duration info
+                        $("#time-slots-container").append(`
+                            <div class="slot-info mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Each slot: ${response.slot_duration} mins
+                                        ${response.break_duration ? ` | Break: ${response.break_duration} mins` : ''}
+                                    </small>
+
+                                </div>
+                            </div>
+                        `);
+
+                        // Implement pagination for time slots
+                        const slotsPerPage = 12; // Show 12 slots per page
+                        const totalSlots = response.available_slots.length;
+                        const totalPages = Math.ceil(totalSlots / slotsPerPage);
+                        
+                        // Store slots data for pagination
+                        window.slotsData = {
+                            slots: response.available_slots,
+                            currentPage: 1,
+                            slotsPerPage: slotsPerPage,
+                            totalPages: totalPages
+                        };
+
+                        // Create slots container with pagination
+                        const $slotsContainer = $("<div class='slots-container'></div>");
+                        const $slotsGrid = $("<div class='slots-grid'></div>");
+                        
+                        // Function to render slots for current page
+                        function renderSlotsForPage(page) {
+                            $slotsGrid.empty();
+                            const startIndex = (page - 1) * slotsPerPage;
+                            const endIndex = startIndex + slotsPerPage;
+                            const pageSlots = response.available_slots.slice(startIndex, endIndex);
+                            
+                            pageSlots.forEach(slot => {
+                                const slotElement = $(`
+                                    <div class="time-slot btn btn-outline-primary"
+                                        data-start="${slot.start}"
+                                        data-end="${slot.end}"
+                                        title="Select ${slot.display}"
+                                        data-time="${slot.display}">
+                                        <i class="bi bi-clock me-1"></i>
+                                        ${slot.display}
+                                    </div>
+                                `);
+
+                                slotElement.on('click', function() {
+                                    $(".time-slot").removeClass("selected active");
+                                    $(this).addClass("selected active");
+                                    bookingState.selectedTime = {
+                                        start: $(this).data('start'),
+                                        end: $(this).data('end'),
+                                        display: $(this).data('time') || $(this).text().trim()
+                                    };
+                                    updateSummary();
+                                });
+
+                                $slotsGrid.append(slotElement);
+                            });
+                        }
+
+                        // Render first page
+                        renderSlotsForPage(1);
+                        $slotsContainer.append($slotsGrid);
+
+                        // Add pagination controls if needed
+                        if (totalPages > 1) {
+                            const $pagination = $(`
+                                <div class="slots-pagination">
+                                    <button class="btn btn-sm btn-outline-secondary" id="prev-page" disabled>
+                                        <i class="bi bi-chevron-left"></i> Previous
+                                    </button>
+                                    <span class="page-info">Page 1 of ${totalPages}</span>
+                                    <button class="btn btn-sm btn-outline-secondary" id="next-page" ${totalPages === 1 ? 'disabled' : ''}>
+                                        Next <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </div>
+                            `);
+
+                            // Pagination event handlers
+                            $pagination.find("#prev-page").on('click', function() {
+                                if (window.slotsData.currentPage > 1) {
+                                    window.slotsData.currentPage--;
+                                    renderSlotsForPage(window.slotsData.currentPage);
+                                    updatePaginationControls();
+                                }
+                            });
+
+                            $pagination.find("#next-page").on('click', function() {
+                                if (window.slotsData.currentPage < totalPages) {
+                                    window.slotsData.currentPage++;
+                                    renderSlotsForPage(window.slotsData.currentPage);
+                                    updatePaginationControls();
+                                }
+                            });
+
+                            function updatePaginationControls() {
+                                const currentPage = window.slotsData.currentPage;
+                                const totalPages = window.slotsData.totalPages;
+                                
+                                $pagination.find("#prev-page").prop('disabled', currentPage === 1);
+                                $pagination.find("#next-page").prop('disabled', currentPage === totalPages);
+                                $pagination.find(".page-info").text(`Page ${currentPage} of ${totalPages}`);
+                            }
+
+                            $slotsContainer.append($pagination);
+                        }
+
+                        $("#time-slots-container").append($slotsContainer);
+                    },
+                    error: function(xhr) {
+                        $("#time-slots-container").html(`
+                            <div class="text-center py-4">
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-exclamation-octagon me-2"></i>
+                                    Error loading availability
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary mt-2" onclick="updateTimeSlots('${selectedDate}')">
+                                            <i class="bi bi-arrow-repeat me-1"></i> Try again
+                                        </button>
+                                    </div>
+                                `);
+                    }
+                });
+            }
+
+
+
+            function updateSummary() {
+                // Find the selected category
+                const selectedCategory = categories.find(cat => cat.id == bookingState.selectedCategory);
+
+                // Update summary with booking details
+                $("#summary-category").text(selectedCategory ? selectedCategory.title : 'Not selected');
+
+                // Update service info - using the stored service object
+                if (bookingState.selectedService) {
+                    $("#summary-service").text(bookingState.selectedService.title);
+                    $("#summary-duration").text(`${bookingState.selectedEmployee.slot_duration} minutes`);
+                }
+
+                // Update employee info
+                if (bookingState.selectedEmployee) {
+                    $("#summary-employee").text(bookingState.selectedEmployee.user.name);
+                }
+
+                // Update date/time info
+                if (bookingState.selectedDate && bookingState.selectedTime) {
+                    const formattedDate = new Date(bookingState.selectedDate).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+
+                    $("#summary-datetime").text(
+                        `${formattedDate} at ${bookingState.selectedTime.display || bookingState.selectedTime}`);
+                }
+
+                // Live summary badges update
+                if (bookingState.selectedDate) {
+                    $('#sumDate').text(new Date(bookingState.selectedDate).toLocaleDateString());
+                }
+                if (bookingState.selectedTime) {
+                    $('#sumTime').text(bookingState.selectedTime.display || bookingState.selectedTime);
+                }
+            }
+
+
+
+            // function submitBooking() {
+
+            function submitBooking() {
+                // Get form data
+                const form = $('#customer-info-form');
+                const csrfToken = form.find('input[name="_token"]').val(); // Get CSRF token from form
+
+                // Prepare booking data
+                const bookingData = {
+                    employee_id: bookingState.selectedEmployee.id,
+                    service_id: bookingState.selectedService.id,
+                    name: $('#customer-name').val(),
+                    email: $('#customer-email').val(),
+                    student_id: $('#customer-student-id').val(),
+                    phone: $('#customer-phone').val(),
+                    notes: $('#customer-notes').val(),
+                    
+                    booking_date: bookingState.selectedDate,
+                    booking_time: bookingState.selectedTime?.display || bookingState.selectedTime,
+                                            status: 'Processing',
+                    _token: csrfToken // Include CSRF token in payload
+                };
+
+                // Add user_id if authenticated (using JavaScript approach)
+                if (typeof currentAuthUser !== 'undefined' && currentAuthUser) {
+                    bookingData.user_id = currentAuthUser.id;
+                }
+
+                // Show loading state
+                const nextBtn = $("#next-step");
+                nextBtn.prop('disabled', true).html(
+                    '<span class="spinner-border spinner-border-sm" role="status"></span> Processing...'
+                );
+
+                // Submit via AJAX
+                $.ajax({
+                    url: '/bookings',
+                    method: 'POST',
+                    data: bookingData,
+                    success: function(response) {
+                        // Update modal with booking details
+                        const formattedDate = new Date(bookingState.selectedDate).toLocaleDateString(
+                            'en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
+
+                        const bookingDetails = `
+                                <div class="mb-2"><strong>Customer:</strong> ${$("#customer-name").val()}</div>
+                                <div class="mb-2"><strong>Student ID:</strong> ${$("#customer-student-id").val()}</div>
+                                <div class="mb-2"><strong>Service:</strong> ${bookingState.selectedService.title}</div>
+                                <div class="mb-2"><strong>Staff:</strong> ${bookingState.selectedEmployee.user.name}</div>
+                                <div class="mb-2"><strong>Date & Time:</strong> ${formattedDate} at ${bookingState.selectedTime.display || bookingState.selectedTime}</div>
+         
+                                <div><strong>Reference:</strong> ${response.booking_id || 'BK-' + Math.random().toString(36).substr(2, 8).toUpperCase()}</div>
+                            `;
+
+                        $('#modal-booking-details').html(bookingDetails);
+
+                        // Build calendar links (local times, no timezone shift)
+                        try {
+                            let startHHmm = bookingState.selectedTime.start;
+                            let endHHmm = bookingState.selectedTime.end;
+                            if (!startHHmm || !endHHmm) {
+                                const display = bookingState.selectedTime.display || '';
+                                const parts = display.split('-');
+                                const start12h = parts[0]?.trim();
+                                const end12h = parts[1]?.trim();
+                                startHHmm = startHHmm || parse12hToHHmm(start12h);
+                                endHHmm = endHHmm || parse12hToHHmm(end12h);
+                            }
+                            // If still missing end, compute from slot_duration
+                            if (!endHHmm && startHHmm) {
+                                endHHmm = addMinutesToHHmm(startHHmm, bookingState.selectedEmployee?.slot_duration || 30);
+                            }
+
+                            const startLocal = buildCalDateLocal(bookingState.selectedDate, startHHmm);
+                            const endLocal = buildCalDateLocal(bookingState.selectedDate, endHHmm);
+                            const title = encodeURIComponent(`${bookingState.selectedService.title} with ${bookingState.selectedEmployee.user.name}`);
+                            const details = encodeURIComponent('Panpacific University Appointment');
+                            const location = encodeURIComponent('Panpacific University');
+                            const gcal = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startLocal}%2F${endLocal}&details=${details}&location=${location}`;
+                            $('#addToGoogleCalendar').attr('href', gcal);
+
+                        } catch (e) {
+                            console.warn('Calendar links error', e);
+                        }
+
+                        // Show success modal
+                        const successModal = new bootstrap.Modal('#bookingSuccessModal');
+                        successModal.show();
+
+                        // Bind download image button
+                        setTimeout(() => {
+                            $('#downloadBookingImage').off('click').on('click', function() {
+                                const modalContent = document.querySelector('#bookingSuccessModal .modal-content');
+                                const actionButtons = document.getElementById('bookingActionButtons');
+                                if (!modalContent) return;
+
+                                // Temporarily hide action buttons and footer buttons
+                                const footer = document.querySelector('#bookingSuccessModal .modal-footer');
+                                const prevDisplayButtons = actionButtons ? actionButtons.style.display : '';
+                                const prevDisplayFooter = footer ? footer.style.display : '';
+                                if (actionButtons) actionButtons.style.display = 'none';
+                                if (footer) footer.style.display = 'none';
+
+                                html2canvas(modalContent, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
+                                    // Restore
+                                    if (actionButtons) actionButtons.style.display = prevDisplayButtons;
+                                    if (footer) footer.style.display = prevDisplayFooter;
+
+                                    const link = document.createElement('a');
+                                    link.download = `${response.booking_id || 'booking'}.png`;
+                                    link.href = canvas.toDataURL('image/png');
+                                    link.click();
+                                }).catch(err => {
+                                    if (actionButtons) actionButtons.style.display = prevDisplayButtons;
+                                    if (footer) footer.style.display = prevDisplayFooter;
+                                    console.warn('Capture failed', err);
+                                });
+                            });
+                        }, 100);
+
+                        // Reset form after delay
+                        setTimeout(resetBooking, 1000);
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Booking failed. Please try again.';
+
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else if (xhr.status === 422) {
+                            errorMessage = 'Validation error: Please check your information.';
+                        }
+
+                        alert(errorMessage);
+                        // If the selected slot was taken in the meantime, go back to time selection and refresh
+                        if (xhr.status === 422 && /slot/i.test(errorMessage)) {
+                            bookingState.selectedTime = null;
+                            goToStep(4);
+                        }
+                        nextBtn.prop('disabled', false).html(
+                            'Confirm Booking <i class="bi bi-check-circle"></i>');
+                    },
+                    complete: function() {
+                        // Re-enable button if request fails
+                        if (nextBtn.prop('disabled')) {
+                            setTimeout(() => {
+                                nextBtn.prop('disabled', false).html(
+                                    'Confirm Booking <i class="bi bi-check-circle"></i>');
+                            }, 2000);
+                        }
+                    }
+                });
+            }
+
+            function resetBooking() {
+                // Reset booking state
+                bookingState = {
+                    currentStep: 1,
+                    selectedCategory: null,
+                    selectedService: null,
+                    selectedEmployee: null,
+                    selectedDate: null,
+                    selectedTime: null
+                };
+
+                // Reset UI
+                $(".category-card, .service-card, .employee-card, .calendar-day, .time-slot").removeClass(
+                    "selected");
+                $("#customer-info-form")[0].reset();
+
+                // Go to first step
+                goToStep(1);
+            }
+        });
+    </script>
+
+    @if ($setting->footer)
+        {!! $setting->footer !!}
+    @endif
+</body>
+
+</html>
