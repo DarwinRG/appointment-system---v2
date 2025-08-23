@@ -17,9 +17,6 @@ class ProfileController extends Controller
             'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
         ];
 
-        // Available slot duration steps
-        $steps = ['5', '10', '15', '20', '30', '45', '60'];
-
         // Available break duration steps
         $breaks = ['5', '10', '15', '20', '25', '30'];
 
@@ -32,7 +29,7 @@ class ProfileController extends Controller
 
 
 
-        return view('backend.profile.index',compact('user','days','steps','breaks','employeeDays'));
+        return view('backend.profile.index',compact('user','days','breaks','employeeDays'));
     }
 
 

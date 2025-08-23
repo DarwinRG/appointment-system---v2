@@ -116,9 +116,6 @@ class UserController extends Controller
             'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
         ];
 
-        // Available slot duration steps
-        $steps = ['5', '10', '15', '20', '30', '45', '60'];
-
         // Available break duration steps
         $breaks = ['5', '10', '15', '20', '25', '30'];
 
@@ -143,7 +140,7 @@ class UserController extends Controller
         $services = Service::whereStatus(1)->get();
 
         // Return the view with data
-        return view('backend.user.edit', compact('user', 'roles', 'services', 'days', 'steps', 'breaks', 'employeeDays'));
+        return view('backend.user.edit', compact('user', 'roles', 'services', 'days', 'breaks', 'employeeDays'));
     }
 
     public function update(Request $request, User $user)
