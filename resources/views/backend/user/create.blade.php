@@ -219,21 +219,12 @@
                                             <label for="slot_duration" class="my-0"><i class="fas fa-stopwatch"></i>
                                                 Service
                                                 Duration</label> <small class="text-muted"> Create booking slots based on
-                                                your preferred time duration.</small>
-                                            @php
-                                                $steps = ['5', '10', '15', '20', '30', '45', '60'];
-                                                $selectedStep = old('slot_duration'); // Get the selected step value from old input
-                                            @endphp
-                                            <select class="form-control @error('step') is-invalid @enderror"
-                                                name="slot_duration" id="slot_duration">
-                                                <option value="" {{ !$selectedStep ? 'selected' : '' }}>Select
-                                                    Duration
-                                                </option>
-                                                @foreach ($steps as $stepValue)
-                                                    <option {{ $selectedStep == $stepValue ? 'selected' : '' }}
-                                                        value="{{ $stepValue }}">{{ $stepValue }}</option>
-                                                @endforeach
-                                            </select>
+                                                your preferred time duration (in minutes).</small>
+                                            <input type="number" class="form-control @error('slot_duration') is-invalid @enderror"
+                                                name="slot_duration" id="slot_duration" 
+                                                placeholder="Enter duration in minutes (e.g., 30)"
+                                                min="5" max="480" step="5"
+                                                value="{{ old('slot_duration') }}">
                                             @error('slot_duration')
                                                 <small class="text-danger"><strong>{{ $message }}</strong></small>
                                             @enderror

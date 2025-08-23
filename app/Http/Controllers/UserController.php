@@ -116,9 +116,6 @@ class UserController extends Controller
             'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
         ];
 
-        // Available slot duration steps
-        $steps = ['5', '10', '15', '20', '30', '45', '60'];
-
         // Available break duration steps
         $breaks = ['5', '10', '15', '20', '25', '30'];
 
@@ -143,7 +140,7 @@ class UserController extends Controller
         $services = Service::whereStatus(1)->get();
 
         // Return the view with data
-        return view('backend.user.edit', compact('user', 'roles', 'services', 'days', 'steps', 'breaks', 'employeeDays'));
+        return view('backend.user.edit', compact('user', 'roles', 'services', 'days', 'breaks', 'employeeDays'));
     }
 
     public function update(Request $request, User $user)
@@ -163,9 +160,9 @@ class UserController extends Controller
                 if ($request->is_employee && !$value) {
                     $fail('The ' . $attribute . ' field is required when the employee is true.');
                 }
-                // If it's present, it should be numeric
-                if ($value && !is_numeric($value)) {
-                    $fail('The ' . $attribute . ' field must be numeric.');
+                // If it's present, it should be numeric and within valid range
+                if ($value && (!is_numeric($value) || $value < 5 || $value > 480)) {
+                    $fail('The ' . $attribute . ' field must be a number between 5 and 480 minutes.');
                 }
             },
             'break_duration' => 'nullable',
