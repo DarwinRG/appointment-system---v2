@@ -517,24 +517,13 @@
                                                             </label>
                                                             <small class="text-muted"> Create booking slots based on your
                                                                 preferred time
-                                                                duration.</small>
+                                                                duration (in minutes).</small>
 
-                                                            <select
-                                                                class="form-control @error('slot_duration') is-invalid @enderror"
-                                                                name="slot_duration" id="slot_duration">
-                                                                <option value=""
-                                                                    {{ old('slot_duration', optional($user->employee)->slot_duration) == '' ? 'selected' : '' }}>
-                                                                    Select Duration
-                                                                </option>
-
-                                                                @foreach ($steps as $stepValue)
-                                                                    <option value="{{ $stepValue }}"
-                                                                        {{ old('slot_duration', optional($user->employee)->slot_duration) == $stepValue ? 'selected' : '' }}>
-                                                                        {{ $stepValue }} minutes
-                                                                    </option>
-                                                                @endforeach
-                                                            </select>
-
+                                                            <input type="number" class="form-control @error('slot_duration') is-invalid @enderror"
+                                                                name="slot_duration" id="slot_duration" 
+                                                                placeholder="Enter duration in minutes (e.g., 30)"
+                                                                min="5" max="480" step="5"
+                                                                value="{{ old('slot_duration', optional($user->employee)->slot_duration) }}">
 
                                                             @error('slot_duration')
                                                                 <small
